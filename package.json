@@ -1,0 +1,23 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:token": "hardhat deploy:token",
+    "deploy:AIStarter": "hardhat deploy:AIStarter",
+    "verify": "hardhat verify"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "2.0.2",
+    "@nomicfoundation/hardhat-verify": "^2.0.4",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "dotenv": "^16.4.5",
+    "ethers": "^5.0.0",
+    "hardhat": "2.19.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "4",
+    "@prb/math": "^4.0.2",
+    "csv-parse": "^5.5.5"
+  }
+}
