@@ -12,7 +12,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     // IDO token address
     IERC20 public rewardToken;
     // IDO token price
-    uint256 public joinIdoPrice;
+    uint256 public joinIdoPrice; 
     // max token Amount for IDO
     uint256 public rewardAmount;
     // default false
@@ -105,7 +105,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
             uint256 time
         )
     {
-        require(iD <= _sumCount, "AINNStarterPublicSale: exist num!");
+        require(iD <= _sumCount, "AIStarterPublicSale: exist num!");
         addr = _joinIdoPropertys[iD].addr;
         joinIdoAmount = _joinIdoPropertys[iD].joinIdoAmount;
         time = _joinIdoPropertys[iD].time;
@@ -121,8 +121,8 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
             uint256[] memory timeArr
         )
     {
-        require(toId <= _sumCount, "AINNStarterPublicSale: exist num!");
-        require(fromId <= toId, "AINNStarterPublicSale: exist num!");
+        require(toId <= _sumCount, "AIStarterPublicSale: exist num!");
+        require(fromId <= toId, "AIStarterPublicSale: exist num!");
         addrArr = new address[](toId - fromId + 1);
         joinIdoAmountArr = new uint256[](toId - fromId + 1);
         timeArr = new uint256[](toId - fromId + 1);
@@ -154,7 +154,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     {
         require(
             ith < _WhiteAddrArr.length,
-            "AINNStarterPublicSale: not in White Adress"
+            "AIStarterPublicSale: not in White Adress"
         );
         return _WhiteAddrArr[ith];
     }
@@ -188,7 +188,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         paraList[7] = _balance[account]; //You committed
         uint256 expectedAmount = getExpectedAmount(account);
         uint256 refundAmount = _balance[account] - expectedAmount;
-        expectedAmount = expectedAmount / (10**18) - (joinIdoPrice);
+        expectedAmount = expectedAmount * (10**18) / (joinIdoPrice);
         paraList[8] = expectedAmount; //Expected token Amount
         paraList[9] = refundAmount; //refund Amount
         paraList[10] = _alreadyClaimNumArr[account]; //Claim num
@@ -221,17 +221,17 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     //---write---//
     //join Ido
     function joinIdo() external payable nonReentrant {
-        require(mbStart, "AINNStarterPublicSale: not Start!");
+        require(mbStart, "AIStarterPublicSale: not Start!");
         require(
             block.timestamp < startTime + dt,
-            "AINNStarterPublicSale: already end!"
+            "AIStarterPublicSale: already end!"
         );
         if (mbWhiteAddr)
             require(
                 _isWhiteAddrArr[msg.sender],
-                "AINNStarterPublicSale:Account  not in white list"
+                "AIStarterPublicSale:Account  not in white list"
             );
-        require(10**8 <= msg.value, "MerlinStarterPublicSale:value sent is too small");
+        require(10**8 <= msg.value, "AIStarterPublicSale:value sent is too small");
         uint256 amount = msg.value;
 
         if (_balance[msg.sender] == 0) {
@@ -250,24 +250,24 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
 
     //claim Token
     function claimToken() external nonReentrant {
-        require(mbStart, "AINNStarterPublicSale: not Start!");
+        require(mbStart, "AIStarterPublicSale: not Start!");
         require(
             block.timestamp > startTime + dt,
-            "AINNStarterPublicSale: need end!"
+            "AIStarterPublicSale: need end!"
         );
         if (mbWhiteAddr)
             require(
                 _isWhiteAddrArr[msg.sender],
-                "AINNStarterPublicSale:Account  not in white list"
+                "AIStarterPublicSale:Account  not in white list"
             );
-        require(_balance[msg.sender] > 0, "AINNStarterPublicSale:balance zero");
+        require(_balance[msg.sender] > 0, "AIStarterPublicSale:balance zero");
         require(
             block.timestamp > startTime + claimDt1,
-            "AINNStarterPublicSale: need begin claim!"
+            "AIStarterPublicSale: need begin claim!"
         );
         require(
             _alreadyClaimNumArr[msg.sender] < 3,
-            "AINNStarterPublicSale: already claim all!"
+            "AIStarterPublicSale: already claim all!"
         );
 
         uint256 coe = 0;
@@ -295,7 +295,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
             }
         }
 
-        require(coe > 0, "AINNStarterPublicSale: claim 0!");
+        require(coe > 0, "AIStarterPublicSale: claim 0!");
 
         uint256 expectedAmount = getExpectedAmount(msg.sender);
         expectedAmount = (expectedAmount * (coe)) / (100);
@@ -307,20 +307,20 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
 
     //claim btc
     function claimBTC() external nonReentrant {
-        require(mbStart, "AINNStarterPublicSale: not Start!");
+        require(mbStart, "AIStarterPublicSale: not Start!");
         require(
             block.timestamp > startTime + dt,
-            "AINNStarterPublicSale: need end!"
+            "AIStarterPublicSale: need end!"
         );
         if (mbWhiteAddr)
             require(
                 _isWhiteAddrArr[msg.sender],
-                "AINNStarterPublicSale:Account  not in white list"
+                "AIStarterPublicSale:Account  not in white list"
             );
-        require(_balance[msg.sender] > 0, "AINNStarterPublicSale:balance zero");
+        require(_balance[msg.sender] > 0, "AIStarterPublicSale:balance zero");
         require(
             !_bClaimBTC[msg.sender],
-            "AINNStarterPublicSale:already claim btc"
+            "AIStarterPublicSale:already claim btc"
         );
 
         uint256 expectedAmount = getExpectedAmount(msg.sender);
@@ -335,7 +335,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         uint256 joinIdoPrice0,
         uint256 rewardAmount0
     ) external onlyOwner {
-        require(!mbStart, "AINNStarterPublicSale: already Start!");
+        require(!mbStart, "AIStarterPublicSale: already Start!");
         rewardToken = IERC20(rewardTokenAddr);
 
         joinIdoPrice = joinIdoPrice0;
@@ -362,14 +362,14 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
 
     //setwhiteaddress true/false
     function setbWhiteAddr(bool bWhiteAddr) external onlyOwner {
-        require(!mbStart, "AINNStarterPublicSale: already Start!");
+        require(!mbStart, "AIStarterPublicSale: already Start!");
         mbWhiteAddr = bWhiteAddr;
     }
 
     receive() external payable {}
 
     function withdraw(uint256 amount) external {
-        require(msg.sender == mFundAddress, "AINNStarterPublicSale: not mFundAddress");
+        require(msg.sender == mFundAddress, "AIStarterPublicSale: not mFundAddress");
         (bool success, ) = payable(mFundAddress).call{value: amount}("");
         require(success, "Low-level call failed");
     }
@@ -385,7 +385,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     function addWhiteAccount(address account) external onlyOwner {
         require(
             !_isWhiteAddrArr[account],
-            "AINNStarterPublicSale:Account is already in White list"
+            "AIStarterPublicSale:Account is already in White list"
         );
         _isWhiteAddrArr[account] = true;
         _WhiteAddrArr.push(account);
@@ -395,7 +395,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         for (uint256 i = 0; i < accountArr.length; ++i) {
             require(
                 !_isWhiteAddrArr[accountArr[i]],
-                "AINNStarterPublicSale:Account is already in White list"
+                "AIStarterPublicSale:Account is already in White list"
             );
             _isWhiteAddrArr[accountArr[i]] = true;
             _WhiteAddrArr.push(accountArr[i]);
@@ -405,7 +405,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     function removeWhiteAccount(address account) external onlyOwner {
         require(
             _isWhiteAddrArr[account],
-            "AINNStarterPublicSale:Account is already out White list"
+            "AIStarterPublicSale:Account is already out White list"
         );
         for (uint256 i = 0; i < _WhiteAddrArr.length; i++) {
             if (_WhiteAddrArr[i] == account) {

@@ -19,7 +19,8 @@ const chainIds = {
   hardhat: 31337,
   mainnet: 1,
   "op-sepolia": 11155420,
-  "polygon-cardona": 2442
+  "polygon-cardona": 2442,
+  ailayerTestnet: 2648,
 }
 
 // Ensure that we have all the environment variables we need.
@@ -41,6 +42,9 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       break
     case "polygon-cardona":
       jsonRpcUrl = "https://rpc.cardona.zkevm-rpc.com"
+      break
+    case "ailayerTestnet":
+      jsonRpcUrl = "https://testnet-rpc.ailayer.xyz"
       break
     default:
       jsonRpcUrl = `https://${chain}.infura.io/v3/${infuraApiKey}`
@@ -66,7 +70,8 @@ const config: HardhatUserConfig = {
     sepolia: getChainConfig("sepolia"),
     mainnet: getChainConfig("mainnet"),
     "op-sepolia": getChainConfig("op-sepolia"),
-    "polygon-cardona": getChainConfig("polygon-cardona")
+    "polygon-cardona": getChainConfig("polygon-cardona"),
+    ailayerTestnet: getChainConfig("ailayerTestnet"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -99,7 +104,8 @@ const config: HardhatUserConfig = {
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       "op-sepolia": process.env.OPSEPOLIA_API_KEY || "",
-      "polygon-cardona": process.env.POLYGON_API_KEY || ""
+      "polygon-cardona": process.env.POLYGON_API_KEY || "",
+      "ailayerTestnet": "yourapikey",
     },
     // https://docs.bscscan.com/v/opbnb-testnet/
     customChains: [{
@@ -116,7 +122,14 @@ const config: HardhatUserConfig = {
         apiURL: "https://api-cardona-zkevm.polygonscan.com/api",
         browserURL: "https://cardona-zkevm.polygonscan.com"
       }
-    }
+    },{
+      network: "ailayerTestnet",
+      chainId: chainIds["ailayerTestnet"],
+      urls: {
+        apiURL: "https://testnet-explorer.ailayer.xyz/api/v2",
+        browserURL: "https://testnet-explorer.ailayer.xyz/tx/",
+      }
+    },
     ],
   },
 

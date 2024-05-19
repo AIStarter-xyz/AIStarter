@@ -53,7 +53,6 @@ task("deploy:AIStarter", "Deploy AIStarter")
     const joinIdoPrice = "1000000000000000000"
     const rewardAmount = "1000000000000000000"
     const mFundAddress = "0x672e40055356401a364A253a88A465145CcCCEc9"
-    console.log(`tokenAddress: ${tokenAddress}`)
     const AIStarterDeployContract: any = await AIStarter.connect(signer).deploy(
       tokenAddress,
       joinIdoPrice,
@@ -86,7 +85,7 @@ task("deploy:AIStarter", "Deploy AIStarter")
             rewardAmount,
             mFundAddress
           ],
-          contract: "contracts/AIStarter.sol:AIStarter_Core_Contributor",
+          contract: "contracts/AIStarter.sol:AIStarterPublicSale",
         })
       } catch (e) {
         console.log(e)
