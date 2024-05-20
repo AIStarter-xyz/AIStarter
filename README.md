@@ -10,3 +10,4 @@ supported network
   - goerli: 5,
   - sepolia: 11155111,
   - op-sepolia: 11155420,
+# AIStarter
