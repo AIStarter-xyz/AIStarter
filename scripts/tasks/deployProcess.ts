@@ -48,23 +48,25 @@ task("deploy:AIStarter", "Deploy AIStarter")
     const [signer]: any = await hre.ethers.getSigners()
     const feeData = await hre.ethers.provider.getFeeData()
     const AIStarter = await hre.ethers.getContractFactory("contracts/AIStarter.sol:AIStarterPublicSale",)
-    const token = readFileSync(`scripts/address/${hre.network.name}/`, "MockToken.json")
-    const tokenAddress = JSON.parse(token).main
-    const joinIdoPrice = "1000000000000000000"
-    const rewardAmount = "1000000000000000000"
-    const mFundAddress = "0x672e40055356401a364A253a88A465145CcCCEc9"
+    // const token = readFileSync(`scripts/address/${hre.network.name}/`, "MockToken.json")
+    // const tokenAddress = JSON.parse(token).main
+    // const joinIdoPrice = "114000000000"
+    // const rewardBTCAmount = "2137500000000000000"
+    // const mFundAddress = "0x672e40055356401a364A253a88A465145CcCCEc9"
     const AIStarterDeployContract: any = await AIStarter.connect(signer).deploy(
-      tokenAddress,
-      joinIdoPrice,
-      rewardAmount,
-      mFundAddress,
+      // tokenAddress,
+      // joinIdoPrice,
+      // rewardBTCAmount,
+      // mFundAddress,
       {
         maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
         maxFeePerGas: feeData.maxFeePerGas,
         gasLimit: 6000000, // optional: for some weird infra network
       })
     console.log(`AIStarter.sol deployed to ${AIStarterDeployContract.address}`)
-
+    const startTime = 1717934400;
+    const setStart = await AIStarterDeployContract.setStart(true, startTime)
+    console.log(`setStart: ${setStart.hash}`)
     const address = {
       main: AIStarterDeployContract.address,
     }
@@ -80,10 +82,10 @@ task("deploy:AIStarter", "Deploy AIStarter")
         await hre.run("verify:verify", {
           address: AIStarterDeployContract.address,
           constructorArguments: [
-            tokenAddress,
-            joinIdoPrice,
-            rewardAmount,
-            mFundAddress
+            // tokenAddress,
+            // joinIdoPrice,
+            // rewardBTCAmount,
+            // mFundAddress
           ],
           contract: "contracts/AIStarter.sol:AIStarterPublicSale",
         })

@@ -10,36 +10,36 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     // IDO token address
-    IERC20 public rewardToken;
-    // IDO token price
-    uint256 public joinIdoPrice; 
-    // max token Amount for IDO
-    uint256 public rewardAmount;
+    IERC20 public rewardToken = IERC20(0x363dBfE061ACEF6A205E93409Eac2b1D77AcB3b0);
+    // IDO token price : 0.000000116 BTC, 116000000000
+    uint256 public joinIdoPrice = 116000000000; 
+    // max token Amount for IDO , 2.1750 BTC , 2175000000000000000 
+    uint256 public rewardBTCAmount= 2175000000000000000;
     // default false
-    bool public mbStart;
+    bool public idoStart;
     // default no whitelist
-    bool public mbWhiteAddr;
-    // public sale opening time
+    bool public idoWhiteAddr;
+    // public sale opening time Jun 9,2024 20:00 UTC+8 : 1717934400
     uint256 public startTime;
-    // endTime = startTime + dt;
-    uint256 public dt = 39 * 3600;
-    // first claim = endtime + claimDt1
-    uint256 public claimDt1;
-    // first claim = endtime + claimDt2
-    uint256 public claimDt2;
-    // first claim = endtime + claimDt3
-    uint256 public claimDt3;
-    // max buy amount per user
-    uint256 public maxAmountPerUser;
+    // endTime = startTime + idoTimeRange, default endTime is  Jun 11,2024 12:00 UTC+8 : 1718078400
+    uint256 public idoTimeRange = 40 * 3600;
+    // firstClaimDt = endTime + claimDt, default 1 days after idoCloseTime;
+    uint256 public claimDt = 24 * 3600;
+    // unlock token per day, 80 % in total 120 days 
+    uint256 public claimPeriod = 24 * 3600;
+    // max buy amount per user 99 BTC
+    uint256 public maxAmountPerUser = 99000000000000000000;
     // expect amount that user can get (will modify if over funded) 
     mapping(address => uint256) private _balance;
     // total participant
     uint256 private _addrAmount;
-    // user buy amount (if > rewardAmount ,then is over funded)
+    // user buy amount (if > rewardBTCAmount ,then is over funded)
     uint256 private _sumAmount;
+    // total claim amount
+    uint256 private totalClaimAmount;
 
     mapping(address => bool) private _isWhiteAddrArr;
-    mapping(address => uint256) private _alreadyClaimNumArr;
+    mapping(address => uint256) private _alreadyClaimAmount;
     mapping(address => bool) private _bClaimBTC;
     address[] private _WhiteAddrArr;
     struct sJoinIdoPropertys {
@@ -51,24 +51,7 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     uint256 private _sumCount;
 
     event JoinIdoCoins(address indexed user, uint256 amount, uint256 id);
-    address public mFundAddress;
-
-    constructor(
-        address _rewardToken,
-        uint256 _joinIdoPrice,
-        uint256 _rewardAmount,
-        address _mFundAddress
-    ) {
-        joinIdoPrice = _joinIdoPrice;
-        rewardAmount = _rewardAmount;
-        // default claim time can be modify if needed
-        claimDt1 = dt + 3 * 3600;
-        claimDt2 = claimDt1 + 0 * 24 * 3600;
-        claimDt3 = claimDt1 + 0 * 24 * 3600;
-
-        rewardToken = IERC20(_rewardToken);
-        mFundAddress = _mFundAddress;
-    }
+    address public mFundAddress = 0xd6Bc9a9f0c13E19420eC952244eB0a43ff6a72a3;
 
     /* ========== VIEWS ========== */
     function sumCount() external view returns (uint256) {
@@ -87,8 +70,8 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         return _balance[account];
     }
 
-    function claimTokenNum(address account) external view returns (uint256) {
-        return _alreadyClaimNumArr[account];
+    function claimTokenAmount(address account) external view returns (uint256) {
+        return _alreadyClaimAmount[account];
     }
 
     function bClaimBTC(address account) external view returns (bool) {
@@ -161,13 +144,13 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
 
     //get account amount (if over-funded then modify the amount)
     function getExpectedAmount(address account) public view returns (uint256) {
-        uint256 ExpectedAmount = _balance[account];
-        if (ExpectedAmount == 0) return ExpectedAmount;
+        uint256 expectedAmount = _balance[account];
+        if (expectedAmount == 0) return expectedAmount;
         // handle over-funded situation
-        if (_sumAmount > rewardAmount) {
-            ExpectedAmount = (rewardAmount * (ExpectedAmount)) / (_sumAmount);
+        if (_sumAmount > rewardBTCAmount) {
+            expectedAmount = (rewardBTCAmount * (expectedAmount)) / (_sumAmount);
         }
-        return ExpectedAmount;
+        return expectedAmount;
     }
 
     // get all parameters associated with account
@@ -176,13 +159,13 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         view
         returns (uint256[] memory)
     {
-        uint256[] memory paraList = new uint256[](uint256(16));
+        uint256[] memory paraList = new uint256[](uint256(15));
         paraList[0] = 0;
-        if (mbStart) paraList[0] = 1;
+        if (idoStart) paraList[0] = 1;
         paraList[1] = startTime; //start Time
-        paraList[2] = startTime + dt; //end Time
+        paraList[2] = startTime + idoTimeRange; //end Time
         paraList[3] = joinIdoPrice; //Token Price:
-        paraList[4] = rewardAmount; //max reward Amount
+        paraList[4] = rewardBTCAmount; //max reward Amount
         paraList[5] = _addrAmount; //Total Participants
         paraList[6] = _sumAmount; //Total Committed
         paraList[7] = _balance[account]; //You committed
@@ -191,47 +174,34 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         expectedAmount = expectedAmount * (10**18) / (joinIdoPrice);
         paraList[8] = expectedAmount; //Expected token Amount
         paraList[9] = refundAmount; //refund Amount
-        paraList[10] = _alreadyClaimNumArr[account]; //Claim num
+        paraList[10] = _alreadyClaimAmount[account]; //Claim Amount
         paraList[11] = 0;
-        if (_bClaimBTC[account]) paraList[11] = 1; //is Claim BTC
-
-        uint256 coe = 0;
-        if (block.timestamp > startTime + claimDt1) {
-            if (_alreadyClaimNumArr[account] < 1) coe = 30;
-        }
-
-        if (block.timestamp > startTime + claimDt2) {
-            if (_alreadyClaimNumArr[account] < 2) coe = coe + 30;
-        }
-        if (block.timestamp > startTime + claimDt3) {
-            if (_alreadyClaimNumArr[account] < 3) coe = coe + 40;
-        }
+        if (_bClaimBTC[account] || refundAmount==0) paraList[11] = 1; //is Claim BTC
+        uint256 coe = getIDOUnlockRatio();
         paraList[12] = coe; //can claim ratio
-        paraList[13] = (expectedAmount * coe) / 100; //can claim amount
-        uint256 LastCoe = 0;
-        if (_alreadyClaimNumArr[account] < 1) LastCoe = 30;
-        if (_alreadyClaimNumArr[account] < 2) LastCoe = LastCoe + 30;
-        if (_alreadyClaimNumArr[account] < 3) LastCoe = LastCoe + 40;
-        paraList[14] = LastCoe; //last claim ratio
-        paraList[15] = (expectedAmount * LastCoe) / 100; //last claim amount
-
+        paraList[13] = (expectedAmount * coe) / 10000; //can claim amount
+        paraList[14] = totalClaimAmount; //total claim amount
         return paraList;
     }
 
     //---write---//
     //join Ido
     function joinIdo() external payable nonReentrant {
-        require(mbStart, "AIStarterPublicSale: not Start!");
+        require(idoStart, "AIStarterPublicSale: not Start!");
         require(
-            block.timestamp < startTime + dt,
+            block.timestamp < startTime + idoTimeRange,
             "AIStarterPublicSale: already end!"
         );
-        if (mbWhiteAddr)
+        if (idoWhiteAddr)
             require(
                 _isWhiteAddrArr[msg.sender],
                 "AIStarterPublicSale:Account  not in white list"
             );
         require(10**8 <= msg.value, "AIStarterPublicSale:value sent is too small");
+        require(
+            _balance[msg.sender] + msg.value <= maxAmountPerUser,
+            "AIStarterPublicSale:over maxAmountPerUser"
+        );
         uint256 amount = msg.value;
 
         if (_balance[msg.sender] == 0) {
@@ -239,7 +209,6 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         }
         _balance[msg.sender] = _balance[msg.sender] + amount;
         _sumAmount = _sumAmount + amount;
-
         _sumCount = _sumCount + 1;
         _joinIdoPropertys[_sumCount].addr = msg.sender;
         _joinIdoPropertys[_sumCount].joinIdoAmount = amount;
@@ -248,81 +217,70 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
         emit JoinIdoCoins(msg.sender, amount, _sumCount);
     }
 
+    // get unlock Ratio
+    function getIDOUnlockRatio() public view returns (uint256) {
+        if (block.timestamp < startTime + idoTimeRange + claimDt) return 0;
+        if (block.timestamp < startTime + idoTimeRange + claimDt + claimPeriod) return 2000;
+        // unlock 80% in 120 days
+        uint256 period = (block.timestamp - startTime - idoTimeRange - claimDt) / claimPeriod;
+        if (period > 120) return 10000;
+        uint256 unlockRatio = 8000 * period / 120;
+        return 2000 + unlockRatio;
+    }
+
     //claim Token
     function claimToken() external nonReentrant {
-        require(mbStart, "AIStarterPublicSale: not Start!");
+        require(idoStart, "AIStarterPublicSale: not Start!");
         require(
-            block.timestamp > startTime + dt,
+            block.timestamp > startTime + idoTimeRange,
             "AIStarterPublicSale: need end!"
         );
-        if (mbWhiteAddr)
+        if (idoWhiteAddr)
             require(
                 _isWhiteAddrArr[msg.sender],
                 "AIStarterPublicSale:Account  not in white list"
             );
         require(_balance[msg.sender] > 0, "AIStarterPublicSale:balance zero");
         require(
-            block.timestamp > startTime + claimDt1,
+            block.timestamp > startTime + claimDt,
             "AIStarterPublicSale: need begin claim!"
         );
-        require(
-            _alreadyClaimNumArr[msg.sender] < 3,
-            "AIStarterPublicSale: already claim all!"
-        );
 
-        uint256 coe = 0;
-        // can change coe if you want to change unlock amount
-        if (_alreadyClaimNumArr[msg.sender] < 1) {
-            coe = 30;
-            _alreadyClaimNumArr[msg.sender] =
-                _alreadyClaimNumArr[msg.sender] +
-                1;
-        }
-        if (block.timestamp > startTime + claimDt2) {
-            if (_alreadyClaimNumArr[msg.sender] < 2) {
-                coe = coe + 30;
-                _alreadyClaimNumArr[msg.sender] =
-                    _alreadyClaimNumArr[msg.sender] +
-                    1;
-            }
-        }
-        if (block.timestamp > startTime + claimDt3) {
-            if (_alreadyClaimNumArr[msg.sender] < 3) {
-                coe = coe + 40;
-                _alreadyClaimNumArr[msg.sender] =
-                    _alreadyClaimNumArr[msg.sender] +
-                    1;
-            }
-        }
+        uint256 coe = getIDOUnlockRatio();
 
         require(coe > 0, "AIStarterPublicSale: claim 0!");
 
         uint256 expectedAmount = getExpectedAmount(msg.sender);
-        expectedAmount = (expectedAmount * (coe)) / (100);
-
+        expectedAmount = (expectedAmount * (coe)) / 10000;
         expectedAmount = (expectedAmount * 10**18) / joinIdoPrice;
+        require(
+            expectedAmount > _alreadyClaimAmount[msg.sender],
+            "AIStarterPublicSale: no token to be claimed!"
+        );
+        expectedAmount -= _alreadyClaimAmount[msg.sender];
         if (expectedAmount > 0)
             rewardToken.safeTransfer(msg.sender, expectedAmount);
+        _alreadyClaimAmount[msg.sender] += expectedAmount;
+        totalClaimAmount += expectedAmount;
     }
 
     //claim btc
     function claimBTC() external nonReentrant {
-        require(mbStart, "AIStarterPublicSale: not Start!");
+        require(idoStart, "AIStarterPublicSale: not Start!");
         require(
-            block.timestamp > startTime + dt,
+            block.timestamp > startTime + idoTimeRange,
             "AIStarterPublicSale: need end!"
         );
-        if (mbWhiteAddr)
+        if (idoWhiteAddr)
             require(
                 _isWhiteAddrArr[msg.sender],
-                "AIStarterPublicSale:Account  not in white list"
+                "AIStarterPublicSale:Account not in white list"
             );
         require(_balance[msg.sender] > 0, "AIStarterPublicSale:balance zero");
         require(
             !_bClaimBTC[msg.sender],
             "AIStarterPublicSale:already claim btc"
         );
-
         uint256 expectedAmount = getExpectedAmount(msg.sender);
         uint256 refundAmount = _balance[msg.sender] - (expectedAmount);
         _bClaimBTC[msg.sender] = true;
@@ -333,43 +291,41 @@ contract AIStarterPublicSale is Ownable, ReentrancyGuard {
     function setParameters(
         address rewardTokenAddr,
         uint256 joinIdoPrice0,
-        uint256 rewardAmount0
+        uint256 rewardBTCAmount0
     ) external onlyOwner {
-        require(!mbStart, "AIStarterPublicSale: already Start!");
+        require(!idoStart, "AIStarterPublicSale: already Start!");
         rewardToken = IERC20(rewardTokenAddr);
 
         joinIdoPrice = joinIdoPrice0;
-        rewardAmount = rewardAmount0;
+        rewardBTCAmount = rewardBTCAmount0;
     }
 
-    function setStart(bool bstart) external onlyOwner {
-        mbStart = bstart;
-        startTime = block.timestamp;
+    function setStart(bool bstart, uint256 startTime0) external onlyOwner {
+        idoStart = bstart;
+        startTime = startTime0;
+    
     }
 
     // set Time
     function setDt(
-        uint256 tDt,
-        uint256 tDt1,
-        uint256 tDt2,
-        uint256 tDt3
+        uint256 _idoTimeRange,
+        uint256 _claimDt,
+        uint256 period
     ) external onlyOwner {
-        dt = tDt;
-        claimDt1 = tDt1;
-        claimDt2 = tDt2;
-        claimDt3 = tDt3;
+        idoTimeRange = _idoTimeRange;
+        claimDt = _claimDt;
+        claimPeriod = period;
     }
 
     //setwhiteaddress true/false
     function setbWhiteAddr(bool bWhiteAddr) external onlyOwner {
-        require(!mbStart, "AIStarterPublicSale: already Start!");
-        mbWhiteAddr = bWhiteAddr;
+        require(!idoStart, "AIStarterPublicSale: already Start!");
+        idoWhiteAddr = bWhiteAddr;
     }
 
     receive() external payable {}
 
-    function withdraw(uint256 amount) external {
-        require(msg.sender == mFundAddress, "AIStarterPublicSale: not mFundAddress");
+    function withdraw(uint256 amount) external onlyOwner {
         (bool success, ) = payable(mFundAddress).call{value: amount}("");
         require(success, "Low-level call failed");
     }
